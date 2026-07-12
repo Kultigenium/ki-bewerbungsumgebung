@@ -1,0 +1,32 @@
+{
+  "_kommentar": "Signalmuster für die Triage. Stufe 0 (scripts/triage.py) wertet sie deterministisch per Regex aus (case-insensitive); Stufe 1 (Free-Tier-LLM) bekommt sie als Wortschatz mitgeliefert. EINE Quelle für beide. Gewichte: positiv = passt zum Profil, negativ = passt nicht.",
+  "stellenart_erforderlich": {
+    "muster": ["werkstudent", "working\\s+student"],
+    "hinweis": "Fehlt jedes dieser Muster, ist es vermutlich kein Werkstudentenjob -> Kategorie D prüfen"
+  },
+  "standort_ok": {
+    "muster": ["berlin", "remote", "home\\s?office", "mobiles arbeiten", "ortsunabhängig"],
+    "hinweis": "Weder Berlin noch remote erkennbar -> vor Ort außerhalb Berlins = Knock-out (D)"
+  },
+  "signale_positiv_stark": {
+    "gewicht": 3,
+    "muster": ["docker", "container", "linux", "\\bn8n\\b", "automatisierung|automation", "rest[- ]?api|\\bapi\\b|schnittstelle", "devops", "\\bki\\b|künstliche intelligenz|\\bai\\b|\\bllm\\b|chatbot|prompt", "server|hosting|\\bvps\\b|systemadministration|sysadmin", "\\bgit\\b|gitlab|github", "\\bbash\\b|shell", "webhook", "workflow|prozessautomatisierung", "\\bmcp\\b"]
+  },
+  "signale_positiv": {
+    "gewicht": 1,
+    "muster": ["\\bjava\\b", "\\bc\\b(?![+#])", "telegram|\\bbot\\b", "oauth", "monitoring|systembetrieb", "it-support|helpdesk|first[- ]?level|1st[- ]?level", "microsoft 365|excel", "systemd", "deployment|ci/cd"]
+  },
+  "signale_negativ": {
+    "gewicht": -2,
+    "muster": ["python", "machine learning|\\bml\\b|deep learning|data science|statistik|statistisch|prognosemodell", "c#|\\.net", "\\bsap\\b", "powershell", "dynamics", "sharepoint", "\\bexchange\\b", "\\bazure\\b", "react|angular|vue|frontend|front-end", "\\bphp\\b", "typescript", "kotlin|swift|flutter", "matlab|simulink", "\\bcad\\b|solidworks", "elektrotechnik|maschinenbau|bauingenieur|verfahrenstechnik"]
+  },
+  "knockout_verdacht": {
+    "muster": ["master\\s*(vorausgesetzt|erforderlich)", "abgeschlossenes\\s+studium", "vollzeit", "praktikum|praktikant|internship", "führerschein|reisebereitschaft", "sicherheitsüberprüfung"],
+    "hinweis": "Nur Verdacht, kein Auto-Knock-out — Kontext entscheidet (z.B. steht 'Vollzeit' oft im Angebotsteil). LLM/Human prüft."
+  },
+  "stunden_abwertung": {
+    "gewicht": -1,
+    "muster": ["mindestens\\s*20\\s*(std|stunden|h)\\b", "20\\s*(std|stunden|h)[^,.]{0,20}(fest|verpflichtend)"],
+    "hinweis": "Präferenz: eher 10–15 h/Woche; fixe 20-h-Forderung abwerten, kein Knock-out"
+  }
+}

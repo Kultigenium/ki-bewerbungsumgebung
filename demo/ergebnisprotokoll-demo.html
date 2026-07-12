@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ergebnisprotokoll — Demo (Triage-Tabelle)</title>
+<style>
+:root{
+  --paper:#FBFAF7; --card:#FFFFFF; --ink:#22262C; --muted:#646B76;
+  --rule:#DCDDD8; --accent:#274F9E;
+  --ok:#2E6B45; --ok-bg:#E4EFE7; --warn:#8A6116; --warn-bg:#F4EBD7;
+  --neut:#5B6270; --neut-bg:#E9EAEC;
+}
+@media (prefers-color-scheme: dark){
+  :root{
+    --paper:#15181D; --card:#1C2027; --ink:#E9EAEC; --muted:#98A0AB;
+    --rule:#2C313A; --accent:#8FAEED;
+    --ok:#7BC496; --ok-bg:#1E2F25; --warn:#D9A84E; --warn-bg:#332912;
+    --neut:#9AA2AD; --neut-bg:#262B33;
+  }
+}
+*{box-sizing:border-box}
+body{margin:0; background:var(--paper); color:var(--ink);
+  font:15px/1.55 "Segoe UI","Helvetica Neue",Arial,sans-serif}
+main{max-width:1060px; margin:0 auto; padding:40px 24px 72px}
+.mono{font-family:"Cascadia Code","JetBrains Mono",Consolas,monospace}
+header.proto{border-bottom:3px solid var(--ink); padding-bottom:20px; margin-bottom:24px;
+  display:flex; flex-wrap:wrap; gap:16px; justify-content:space-between; align-items:flex-end}
+.eyebrow{font-family:"Cascadia Code",Consolas,monospace; font-size:11px; letter-spacing:.14em;
+  text-transform:uppercase; color:var(--muted); margin:0 0 8px}
+h1{font-size:26px; line-height:1.15; margin:0; letter-spacing:-.01em}
+.kopf-meta{font-family:"Cascadia Code",Consolas,monospace; font-size:12px; color:var(--muted);
+  text-align:right; line-height:1.8}
+.kopf-meta b{color:var(--ink)}
+.kpis{display:grid; grid-template-columns:repeat(auto-fit,minmax(120px,1fr)); gap:10px; margin-bottom:14px}
+.kpi{background:var(--card); border:1px solid var(--rule); border-radius:6px; padding:14px 16px}
+.kpi .z{font-family:"Cascadia Code",Consolas,monospace; font-size:26px; font-weight:600;
+  font-variant-numeric:tabular-nums; line-height:1.1}
+.kpi .l{font-size:12px; color:var(--muted); margin-top:4px}
+.kpi.k-a .z{color:var(--ok)} .kpi.k-b .z{color:var(--accent)}
+.kpi.k-c .z{color:var(--warn)} .kpi.k-d .z{color:var(--neut)}
+.pill{display:inline-block; font-family:"Cascadia Code",Consolas,monospace; font-size:11.5px;
+  font-weight:600; padding:2px 9px; border-radius:99px; white-space:nowrap}
+.p-a{background:var(--ok-bg); color:var(--ok)}
+.p-b{background:color-mix(in srgb,var(--accent) 14%,var(--card)); color:var(--accent)}
+.p-c{background:var(--warn-bg); color:var(--warn)}
+.p-d{background:var(--neut-bg); color:var(--neut)}
+.p-int{background:var(--neut-bg); color:var(--neut); font-weight:500}
+.tabelle{overflow-x:auto; border:1px solid var(--rule); border-radius:6px; background:var(--card)}
+table{border-collapse:collapse; width:100%; min-width:820px; font-size:13.5px}
+th{font-family:"Cascadia Code",Consolas,monospace; font-size:11px; letter-spacing:.1em;
+  text-transform:uppercase; color:var(--muted); font-weight:600; text-align:left;
+  padding:10px 12px; border-bottom:2px solid var(--rule)}
+td{padding:9px 12px; border-bottom:1px solid var(--rule); vertical-align:top}
+tr:last-child td{border-bottom:none}
+td.score{font-family:"Cascadia Code",Consolas,monospace; font-variant-numeric:tabular-nums; text-align:right}
+td .firma{color:var(--muted); font-size:12.5px}
+td.gap{color:var(--muted); font-size:12.5px; max-width:340px}
+tbody tr:hover td{background:color-mix(in srgb,var(--accent) 5%,transparent)}
+footer{margin-top:32px; font-family:"Cascadia Code",Consolas,monospace; font-size:11.5px; color:var(--muted)}
+</style>
+</head>
+<body>
+<main>
+<header class="proto">
+  <div>
+    <p class="eyebrow">KI-Bewerbungsumgebung · Ergebnisprotokoll (Demo-Auszug)</p>
+    <h1>Stellen-Triage — echter Lauf, 19 Anzeigen</h1>
+  </div>
+  <div class="kopf-meta">
+    Triage-Modell: <b>Gemini Flash (Free-Tier)</b><br>
+    Kosten des Laufs: <b>0&nbsp;€</b>
+  </div>
+</header>
+
+<div class="kpis">
+  <div class="kpi"><div class="z mono">19</div><div class="l">geprüft gesamt</div></div>
+  <div class="kpi k-a"><div class="z mono">6</div><div class="l">A — bewerben (stark)</div></div>
+  <div class="kpi k-b"><div class="z mono">3</div><div class="l">B — bewerben (Lücken)</div></div>
+  <div class="kpi k-c"><div class="z mono">3</div><div class="l">C — Grenzfall</div></div>
+  <div class="kpi k-d"><div class="z mono">7</div><div class="l">D — nicht bewerben</div></div>
+</div>
+
+<div class="tabelle">
+<table>
+  <thead><tr>
+    <th>Kat</th><th>Stelle · Firma</th><th>Ort</th><th style="text-align:right">Score</th><th>Lücken / Knock-out (ehrlich)</th>
+  </tr></thead>
+  <tbody>
+    <tr><td><span class="pill p-a">A</span></td><td><b>Founders Associate / Business Development</b><br><span class="firma">KI-Beratung, Berlin</span></td><td>Berlin (hybrid)</td><td class="score">12</td><td class="gap">Business Development, Pitch-Decks — Kern (KI-Agenten + n8n) voll gedeckt: bester Match</td></tr>
+    <tr><td><span class="pill p-a">A</span> <span class="pill p-int">INT</span></td><td><b>Founders Associate</b><br><span class="firma">Automatisierungs-Startup</span></td><td>Berlin (hybrid)</td><td class="score">9</td><td class="gap">Partner-Support auf Englisch; Airtable/Make (bisher n8n)</td></tr>
+    <tr><td><span class="pill p-a">A</span></td><td><b>IT-Support, Systemadministration &amp; digitales Arbeiten</b><br><span class="firma">Non-Profit-Redaktion</span></td><td>Berlin (hybrid)</td><td class="score">7</td><td class="gap">Apple-Ökosystem-Fokus</td></tr>
+    <tr><td><span class="pill p-a">A</span> <span class="pill p-int">INT</span></td><td><b>IT-Support</b><br><span class="firma">Bahntechnik-Konzern</span></td><td>Berlin/München (hybrid)</td><td class="score">2</td><td class="gap">Spanisch (nur „hilfreich")</td></tr>
+    <tr><td><span class="pill p-a">A</span> <span class="pill p-int">INT</span></td><td><b>Industrial Digital Solutions</b><br><span class="firma">Chemie-/Industriekonzern</span></td><td>Berlin (vor Ort)</td><td class="score">1</td><td class="gap">Laborprozesse, QA-Zertifizierung</td></tr>
+    <tr><td><span class="pill p-a">A</span> <span class="pill p-int">INT</span></td><td><b>Technical Onboarding (B2B SaaS)</b><br><span class="firma">Verpackungs-Scale-up</span></td><td>Berlin (hybrid)</td><td class="score">-1</td><td class="gap">ERP-Systeme, SFTP-Datenimporte</td></tr>
+    <tr><td><span class="pill p-b">B</span></td><td><b>Service Desk &amp; Data Analytics (Power BI / KI)</b><br><span class="firma">Mobilitätsdaten-Firma</span></td><td>Berlin (hybrid)</td><td class="score">8</td><td class="gap">Power BI, SQL, Datenanalyse</td></tr>
+    <tr><td><span class="pill p-b">B</span></td><td><b>Digital Finance</b><br><span class="firma">Branchenverband</span></td><td>Berlin (hybrid)</td><td class="score">3</td><td class="gap">Finanzmarktregulierung; Recherche-Fokus</td></tr>
+    <tr><td><span class="pill p-b">B</span></td><td><b>Werkstudent IT</b><br><span class="firma">Digitalisierungs-AG</span></td><td>Berlin (vor Ort)</td><td class="score">-1</td><td class="gap">JS/TypeScript, React, SQL (laut Anzeige optional)</td></tr>
+    <tr><td><span class="pill p-c">C</span></td><td><b>AI Engineer (Werkstudent)</b><br><span class="firma">KI-Startup</span></td><td>Berlin (hybrid)</td><td class="score">8</td><td class="gap">Python als Muss-Anforderung — Kern-Konflikt mit Ausschluss-Regel</td></tr>
+    <tr><td><span class="pill p-c">C</span></td><td><b>Energiewirtschaft / Datenanalyse</b><br><span class="firma">Übertragungsnetzbetreiber</span></td><td>Berlin (hybrid)</td><td class="score">0</td><td class="gap">Python (Muss), ML/Statistik, Datenbanken — zurückgestellt nach Systemaudit</td></tr>
+    <tr><td><span class="pill p-c">C</span> <span class="pill p-int">INT</span></td><td><b>Software Engineer Backend/APIs/DevOps</b><br><span class="firma">FinTech</span></td><td>Berlin (remote)</td><td class="score">-1</td><td class="gap">Kotlin/Spring/MongoDB, Terraform</td></tr>
+    <tr><td><span class="pill p-d">D</span></td><td><b>Software Engineering</b><br><span class="firma">KI-Startup</span></td><td>Berlin (hybrid)</td><td class="score">6</td><td class="gap">Kern: Frontend + SQL (Nicht-vorhanden-Liste) — trotz hohem Regex-Score korrekt aussortiert</td></tr>
+    <tr><td><span class="pill p-d">D</span></td><td><b>Kongress-IT</b><br><span class="firma">Event-IT-Dienstleister</span></td><td>Velten (vor Ort)</td><td class="score">3</td><td class="gap">Knock-out: vor Ort außerhalb Berlins + Reisebereitschaft</td></tr>
+    <tr><td><span class="pill p-d">D</span></td><td><b>Fullstack Webentwicklung</b><br><span class="firma">Security-Startup</span></td><td>Berlin (hybrid)</td><td class="score">2</td><td class="gap">Kern: Vue + TypeScript</td></tr>
+    <tr><td><span class="pill p-d">D</span></td><td><b>Live Operations</b><br><span class="firma">Food-Startup</span></td><td>Berlin</td><td class="score">1</td><td class="gap">fachfremd</td></tr>
+    <tr><td><span class="pill p-d">D</span></td><td><b>Sustainability &amp; Energy (Real Estate)</b><br><span class="firma">Halbleiter-Konzern</span></td><td>Berlin</td><td class="score">0</td><td class="gap">fachfremd</td></tr>
+    <tr><td><span class="pill p-d">D</span></td><td><b>Recruiting</b><br><span class="firma">InsurTech</span></td><td>Berlin (hybrid)</td><td class="score">0</td><td class="gap">fachfremd</td></tr>
+    <tr><td><span class="pill p-d">D</span></td><td><b>Data &amp; BI Reporting Support</b><br><span class="firma">Logistik-Konzern</span></td><td>Berlin (hybrid)</td><td class="score">-2</td><td class="gap">Kern: SQL &amp; Datenanalyse (Nicht-vorhanden-Liste)</td></tr>
+  </tbody>
+</table>
+</div>
+
+<footer>
+  Demo-Auszug eines echten Triage-Laufs (Firmennamen anonymisiert) ·
+  Kat: A = bewerben (stark) · B = mit Lücken · C = Grenzfall · D = Knock-out ·
+  Score = deterministischer Regex-Vorscore, Kategorie = Free-Tier-LLM-Urteil
+</footer>
+</main>
+</body>
+</html>

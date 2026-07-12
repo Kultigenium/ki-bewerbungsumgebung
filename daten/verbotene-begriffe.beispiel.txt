@@ -1,0 +1,16 @@
+# Verbotene Begriffe auf jedem CV — BINDEND (eine Quelle für Mensch & Skript).
+# Gelesen von scripts/check_cv.sh. Kommentar- und Leerzeilen werden ignoriert.
+# Prüfung erfolgt case-insensitive auf dem extrahierten PDF-Text.
+#
+# Hier gehören zwei Arten von Begriffen hinein:
+# 1. Tools/Systeme, die die Person NICHT beherrscht (aus den Master-Daten, NICHT-Liste)
+# 2. Verräter-Begriffe zu persönlichen Ausschluss-Regeln — z.B. wenn eine Sprache nicht
+#    als Kenntnis erscheinen darf, auch deren Framework-Namen listen.
+
+# --- NICHT-Liste (Beispiele — ersetzen!) ---
+BeispielTool
+BeispielPlattform
+
+# --- Ausschluss-Regel-Verräter (Beispiele — ersetzen!) ---
+BeispielSprache
+BeispielFramework
