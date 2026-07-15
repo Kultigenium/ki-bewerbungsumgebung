@@ -2,6 +2,7 @@
 .env
 daten/master-daten.md
 daten/matching-profil.md
+daten/interessen-profil.md
 daten/verbotene-begriffe.txt
 output/
 triage/

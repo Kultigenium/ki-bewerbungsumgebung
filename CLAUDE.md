@@ -15,7 +15,12 @@ Fassungen bleiben lokal (gitignored). Siehe README „Setup".
 - `daten/lebenslauf-generator.md` — Der Generator-Prompt mit allen Regeln. Bei jeder
   CV-Erzeugung vollständig befolgen.
 - `daten/kritiker-prompt.md` — Gemeinsamer Prüf-Prompt für alle Reviewer-Modelle.
-- `daten/matching-profil.md` — Präferenzen + Kategorien (A–D) für die Stellen-Triage.
+- `daten/interessen-profil.md` — **Führende Achse der Triage (interessen-first):** Was die Person
+  machen WILL. Entscheidet VOR der Qualifikation und liefert das CV-Framing. Vorlage:
+  `interessen-profil.beispiel.md`.
+- `daten/matching-profil.md` — Präferenzen + Kategorien (A–D) für die Stellen-Triage
+  (interessen-first: fehlende Muss-Skills werfen ein Wunsch-Thema nicht raus, sie werden nur als
+  Lücke markiert; echte Misfit-Kerne bleiben C/D).
 - `daten/matching-patterns.json` — Signal-Wortlisten/Gewichte fürs Pattern-Matching
   (eine Quelle für Skript und Triage-LLM; an das eigene Profil anpassen).
 - `daten/verbotene-begriffe.txt` — Bindende Ein-Quellen-Liste der Begriffe, die nie im
@@ -32,7 +37,8 @@ Fassungen bleiben lokal (gitignored). Siehe README „Setup".
 
 ## Workflow pro Bewerbung
 0. Bei mehreren neuen Anzeigen zuerst Triage (spart High-End-Tokens):
-   `python3 scripts/triage.py` → `triage/UEBERSICHT.md` lesen. Nur Kategorie A/B bekommen
+   `python3 scripts/triage.py` → `triage/UEBERSICHT.md` lesen. Triage ist **interessen-first**
+   (Feld `interesse` hoch/mittel/gering führt vor der Kategorie). Nur Kategorie A/B bekommen
    den Volldurchlauf; D wird nicht bearbeitet.
 1. Stellenanzeige nach `stellenanzeigen/` legen.
 2. Anzeige lesen + `daten/master-daten.md` lesen + Regeln aus

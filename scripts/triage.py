@@ -34,6 +34,13 @@ ANZEIGEN = ROOT / "stellenanzeigen"
 TRIAGE = ROOT / "triage"
 DETAILS = TRIAGE / "details"
 KAT_ORDNUNG = {"A": 0, "B": 1, "C": 2, "D": 3, "?": 4}
+INTERESSE_RANG = {"hoch": 0, "mittel": 1, "gering": 2}  # führende Sortier-Achse (interessen-first)
+
+
+def slug_von(stem):
+    """Kollisionssicherer Dateiname für triage/details/ (Basis + Hash-Suffix)."""
+    base = re.sub(r"[^a-z0-9äöüß]+", "-", stem.lower()).strip("-")[:60]
+    return f"{base}-{hashlib.sha256(stem.encode('utf-8')).hexdigest()[:6]}"
 
 
 def lade_env():
@@ -56,12 +63,25 @@ def api_konfig():
 
 
 def anzeigen_sammeln():
-    dateien = []
-    for p in sorted(ANZEIGEN.iterdir()):
-        if p.name == "README.md" or p.name.endswith(":Zone.Identifier"):
+    dateien, gesehen = [], set()
+    for p in sorted(x for x in ANZEIGEN.rglob("*") if x.is_file()):
+        if p.name.endswith(":Zone.Identifier"):
+            p.unlink()  # Windows-Metadaten-Müll (Mark of the Web) — automatisch entsorgen
             continue
+        if p.name == "README.md":
+            continue
+        if p.name in gesehen:
+            print(f"übersprungen (gleicher Dateiname bereits erfasst): {p}")
+            continue
+        gesehen.add(p.name)
         if p.suffix.lower() in (".md", ".txt"):
-            dateien.append((p, p.read_text(encoding="utf-8", errors="replace")))
+            text = p.read_text(encoding="utf-8", errors="replace")
+            # Portal-Export-Rauschen entfernen: verlinkte Fremd-Anzeigen ("beliebte Jobs")
+            # als Überschriften-Links, die sonst Titel/Urteil des LLM verfälschen.
+            text = "\n".join(z for z in text.splitlines()
+                             if not re.match(r"\s*#+\s*\[", z)
+                             and "bei anderen Jobsuchenden beliebt" not in z)
+            dateien.append((p, text))
         elif p.suffix.lower() == ".pdf":
             text = subprocess.run(["pdftotext", str(p), "-"], capture_output=True,
                                   text=True).stdout
@@ -119,6 +139,46 @@ def stufe1(profil, patterns, anzeige_text, key, base, modell):
     raise RuntimeError("Rate-Limit nach 3 Versuchen nicht überwunden")
 
 
+def duplikate_markieren(ergebnisse):
+    """Plattformübergreifende Duplikate: gleiche Firma + inhaltlich gleicher Titel.
+    Boilerplate (werkstudent, (m/w/d), Portal-Floskeln) wird vor dem Vergleich entfernt,
+    damit generische Titel-Bausteine keine False Positives erzeugen. Das erste Vorkommen
+    (alphabetisch nach Datei) bleibt Original, der Rest wird markiert."""
+    from difflib import SequenceMatcher
+
+    def norm_firma(f):
+        f = re.sub(r"\b(gmbh|ag|ug|se|kg|co|holding|ggmbh|mbh|haftungsbeschränkt|"
+                   r"haftungsbeschraenkt|e\.v)\b\.?", "", str(f).lower())
+        return re.sub(r"[^a-z0-9äöüß]", "", f)
+
+    BOILER = {"werkstudent", "werkstudentin", "werkstudentinnen", "studentenjobs", "teilzeit",
+              "homeoffice", "home", "office", "xing", "jobs", "job", "berlin", "in", "für",
+              "der", "die", "das", "im", "bereich", "all", "genders", "mwd", "wmd", "mwdx", "d"}
+
+    def titel_tokens(t):
+        t = re.sub(r"\((?:all genders|[mwdxf/ -]+)\)", " ", str(t).lower())
+        toks = re.findall(r"[a-z0-9äöüß]+", t)
+        return [w for w in toks if w not in BOILER and len(w) > 1]
+
+    gesehen = []
+    for e in sorted(ergebnisse, key=lambda x: x["datei"]):
+        e.pop("duplikat_von", None)
+        nf = norm_firma(e.get("firma", ""))
+        toks = titel_tokens(e.get("titel", ""))
+        if not nf or nf in {"unklar", "?"} or not toks or e.get("kategorie", "?") == "?":
+            continue
+        s1 = set(toks); j1 = " ".join(toks)
+        for gf, gs, gj, ge in gesehen:
+            if gf != nf:
+                continue
+            # Token-Teilmenge (gleiche Rolle, ein Titel ausführlicher) ODER hohe Ähnlichkeit
+            if s1 <= gs or gs <= s1 or SequenceMatcher(None, j1, gj).ratio() >= 0.82:
+                e["duplikat_von"] = ge["datei"]
+                break
+        else:
+            gesehen.append((nf, s1, j1, e))
+
+
 def uebersicht_schreiben(ergebnisse):
     zeilen = [
         "# Triage-Übersicht Stellenanzeigen",
@@ -129,18 +189,27 @@ def uebersicht_schreiben(ergebnisse):
         "C = Grenzfall (nur bei Kapazität) · D = nicht bewerben · ? = nur Stufe 0 (kein LLM)",
         "",
     ]
-    anz = {k: sum(1 for e in ergebnisse if e.get("kategorie", "?") == k) for k in KAT_ORDNUNG}
-    zeilen.append(" · ".join(f"**{k}: {n}**" for k, n in anz.items() if n) or "(keine Anzeigen)")
-    zeilen += ["", "| Kat | Stelle | Firma | Ort/Remote | Score | Lücken / Knock-out | Quelle |",
-               "|-----|--------|-------|------------|-------|--------------------|--------|"]
-    for e in sorted(ergebnisse, key=lambda e: (KAT_ORDNUNG.get(e.get("kategorie", "?"), 4),
+    uniq = [e for e in ergebnisse if not e.get("duplikat_von")]
+    anz = {k: sum(1 for e in uniq if e.get("kategorie", "?") == k) for k in KAT_ORDNUNG}
+    kopf = " · ".join(f"**{k}: {n}**" for k, n in anz.items() if n) or "(keine Anzeigen)"
+    if len(ergebnisse) - len(uniq):
+        kopf += (f" · **Duplikate: {len(ergebnisse) - len(uniq)}** "
+                 "(plattformübergreifend erkannt, ans Tabellenende sortiert)")
+    zeilen.append(kopf)
+    zeilen += ["", "| Interesse | Kat | Stelle | Firma | Ort/Remote | Score | Lücken / Knock-out | Quelle |",
+               "|-----------|-----|--------|-------|------------|-------|--------------------|--------|"]
+    for e in sorted(ergebnisse, key=lambda e: (1 if e.get("duplikat_von") else 0,
+                                               INTERESSE_RANG.get(e.get("interesse", "mittel"), 1),
+                                               KAT_ORDNUNG.get(e.get("kategorie", "?"), 4),
                                                -e.get("stufe0", {}).get("score", 0))):
         ort = e.get("ort", "?")
         if e.get("remote") and e.get("remote") != "unklar":
             ort += f" ({e['remote']}{', INT' if e.get('int_flag') else ''})"
         problem = e.get("knockout") or "; ".join(e.get("luecken", [])) or "—"
+        if e.get("duplikat_von"):
+            problem = f"DUPLIKAT von `{e['duplikat_von']}`"
         zeilen.append(
-            f"| {e.get('kategorie', '?')} | {e.get('titel', e['datei'])} "
+            f"| {e.get('interesse', '?')} | {e.get('kategorie', '?')} | {e.get('titel', e['datei'])} "
             f"| {e.get('firma', '?')} | {ort} | {e['stufe0']['score']} "
             f"| {problem} | `{e['datei']}` |")
     zeilen += ["", "Details je Anzeige (Begründung, Signale): `triage/details/*.json`", ""]
@@ -157,6 +226,10 @@ def main():
     lade_env()
     key, base, modell = api_konfig()
     profil = (ROOT / "daten" / "matching-profil.md").read_text(encoding="utf-8")
+    interessen_pfad = ROOT / "daten" / "interessen-profil.md"
+    if interessen_pfad.exists():
+        profil += ("\n\n# INTERESSEN-PROFIL (führende Achse — Interesse zuerst!)\n"
+                   + interessen_pfad.read_text(encoding="utf-8"))
     patterns_text = (ROOT / "daten" / "matching-patterns.json").read_text(encoding="utf-8")
     patterns = json.loads(patterns_text)
     regeln_hash = hashlib.sha256((profil + patterns_text).encode("utf-8")).hexdigest()
@@ -173,10 +246,9 @@ def main():
         print("HINWEIS: kein API-Schlüssel bzw. --nur-scan — es läuft nur Stufe 0 "
               "(Kategorie bleibt '?').")
 
-    ergebnisse, neu = [], 0
+    ergebnisse, neu, fehler_429_in_folge = [], 0, 0
     for pfad, text in dateien:
-        slug = re.sub(r"[^a-z0-9äöüß]+", "-", pfad.stem.lower()).strip("-")[:60]
-        detail_pfad = DETAILS / f"{slug}.json"
+        detail_pfad = DETAILS / f"{slug_von(pfad.stem)}.json"
         checksumme = hashlib.sha256(text.encode("utf-8")).hexdigest()
 
         alt = None
@@ -191,23 +263,35 @@ def main():
         eintrag = {"datei": pfad.name, "checksumme": checksumme,
                    "regeln_checksumme": regeln_hash,
                    "stufe0": stufe0(text, patterns)}
-        if llm_aktiv:
+        if llm_aktiv and fehler_429_in_folge < 2:
             print(f"Triage ({modell}): {pfad.name}")
             try:
                 eintrag.update(stufe1(profil, patterns, text, key, base, modell))
-                time.sleep(float(os.environ.get("TRIAGE_DELAY", "2")))
+                fehler_429_in_folge = 0
+                time.sleep(float(os.environ.get("TRIAGE_DELAY", "5")))
             except Exception as fehler:
                 print(f"    FEHLER Stufe 1: {fehler} — Eintrag bleibt bei Stufe 0.")
                 eintrag["stufe1_fehler"] = str(fehler)
+                if "429" in str(fehler):
+                    fehler_429_in_folge += 1
+                    if fehler_429_in_folge >= 2:
+                        print("ABBRUCH LLM-Stufe: Kontingent offenbar erschöpft — Rest bleibt "
+                              "bei Stufe 0. Später erneut ausführen (Cache überspringt Fertiges).")
         eintrag.setdefault("kategorie", "?")
         detail_pfad.write_text(json.dumps(eintrag, ensure_ascii=False, indent=2),
                                encoding="utf-8")
         ergebnisse.append(eintrag)
         neu += 1
 
+    duplikate_markieren(ergebnisse)
+    for e in ergebnisse:
+        (DETAILS / f"{slug_von(Path(e['datei']).stem)}.json").write_text(
+            json.dumps(e, ensure_ascii=False, indent=2), encoding="utf-8")
+
     uebersicht_schreiben(ergebnisse)
+    dups = sum(1 for e in ergebnisse if e.get("duplikat_von"))
     print(f"\nFertig: {len(ergebnisse)} Anzeigen ({neu} neu/aktualisiert, "
-          f"{len(ergebnisse) - neu} aus Cache) → triage/UEBERSICHT.md")
+          f"{len(ergebnisse) - neu} aus Cache, {dups} Duplikate) → triage/UEBERSICHT.md")
     return 0
 
 

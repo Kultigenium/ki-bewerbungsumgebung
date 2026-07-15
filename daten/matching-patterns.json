@@ -1,5 +1,5 @@
 {
-  "_kommentar": "Signalmuster für die Triage. Stufe 0 (scripts/triage.py) wertet sie deterministisch per Regex aus (case-insensitive); Stufe 1 (Free-Tier-LLM) bekommt sie als Wortschatz mitgeliefert. EINE Quelle für beide. Gewichte: positiv = passt zum Profil, negativ = passt nicht.",
+  "_kommentar": "Signalmuster für die Triage (interessen-first, siehe daten/interessen-profil.md + matching-profil.md). Stufe 0 (scripts/triage.py) wertet deterministisch per Regex aus (case-insensitive); Stufe 1 (Free-Tier-LLM) bekommt sie als Wortschatz. EINE Quelle für beide. Gewichte: positiv = passt zu Interesse/Profil, negativ = echter Misfit. WICHTIG: Python ist KEIN Negativsignal mehr — ein KI-/Automatisierungs-Job mit Python-Muss ist ein Wunsch-Job (das LLM entscheidet den Kontext). Negativ bleiben nur echte Misfit-Kerne (reine Data-Science/ML, Frontend/Mobile, fachfremd, Nicht-vorhanden-Techs ohne KI-Bezug).",
   "stellenart_erforderlich": {
     "muster": ["werkstudent", "working\\s+student"],
     "hinweis": "Fehlt jedes dieser Muster, ist es vermutlich kein Werkstudentenjob -> Kategorie D prüfen"
@@ -10,7 +10,7 @@
   },
   "signale_positiv_stark": {
     "gewicht": 3,
-    "muster": ["docker", "container", "linux", "\\bn8n\\b", "automatisierung|automation", "rest[- ]?api|\\bapi\\b|schnittstelle", "devops", "\\bki\\b|künstliche intelligenz|\\bai\\b|\\bllm\\b|chatbot|prompt", "server|hosting|\\bvps\\b|systemadministration|sysadmin", "\\bgit\\b|gitlab|github", "\\bbash\\b|shell", "webhook", "workflow|prozessautomatisierung", "\\bmcp\\b"]
+    "muster": ["docker", "container", "linux", "\\bn8n\\b", "automatisierung|automation", "rest[- ]?api|\\bapi\\b|schnittstelle", "devops", "\\bki\\b|künstliche intelligenz|\\bai\\b|\\bllm\\b|chatbot|prompt", "agent|agentic|multi-agent", "no[- ]?code|low[- ]?code", "server|hosting|\\bvps\\b|systemadministration|sysadmin", "\\bgit\\b|gitlab|github", "\\bbash\\b|shell", "webhook", "workflow|prozessautomatisierung", "\\bmcp\\b"]
   },
   "signale_positiv": {
     "gewicht": 1,
@@ -18,7 +18,8 @@
   },
   "signale_negativ": {
     "gewicht": -2,
-    "muster": ["python", "machine learning|\\bml\\b|deep learning|data science|statistik|statistisch|prognosemodell", "c#|\\.net", "\\bsap\\b", "powershell", "dynamics", "sharepoint", "\\bexchange\\b", "\\bazure\\b", "react|angular|vue|frontend|front-end", "\\bphp\\b", "typescript", "kotlin|swift|flutter", "matlab|simulink", "\\bcad\\b|solidworks", "elektrotechnik|maschinenbau|bauingenieur|verfahrenstechnik"]
+    "_hinweis": "Python bewusst NICHT hier — im KI-/Automatisierungs-Kontext ist es ein Wunsch-Lernfeld. Negativ bleiben nur echte Misfit-Kerne. Das LLM entscheidet Kontext (z.B. 'ML mit Python' = Misfit, 'Automatisierung mit Python' = Wunsch).",
+    "muster": ["machine learning|\\bml\\b|deep learning|data science|statistik|statistisch|prognosemodell", "c#|\\.net", "\\bsap\\b", "powershell", "dynamics", "sharepoint", "\\bexchange\\b", "\\bazure\\b", "react|angular|vue|frontend|front-end", "\\bphp\\b", "typescript", "kotlin|swift|flutter", "matlab|simulink", "\\bcad\\b|solidworks", "elektrotechnik|maschinenbau|bauingenieur|verfahrenstechnik"]
   },
   "knockout_verdacht": {
     "muster": ["master\\s*(vorausgesetzt|erforderlich)", "abgeschlossenes\\s+studium", "vollzeit", "praktikum|praktikant|internship", "führerschein|reisebereitschaft", "sicherheitsüberprüfung"],
